@@ -44,7 +44,7 @@
         <resource_ref name="GPIO Event Trigger" enabled="0"/>
         <resource_ref name="I2C Master" enabled="1">
             <rattr name="SCL frequency">1</rattr>
-            <rattr name="SCL stretch timeout">10</rattr>
+            <rattr name="SCL stretch timeout">50</rattr>
             <io_usage>
                 <uattr name="SCL pin/0000">DIO4</uattr>
                 <uattr name="SDA pin/0000">DIO5</uattr>
@@ -146,17 +146,23 @@
     i2cStart();
     i2cTx(I2C_OP_WRITE | ALS_I2C_ADDR);
     i2cTx(comand);
-//    i2cTx(TEMP_MEASUR_NO_HOLD);
-//    i2cStop();
+    //    i2cTx(TEMP_MEASUR_NO_HOLD);
+    //    i2cStop();
 
     //fwDelayUs(10,FW_DELAY_RANGE_1_MS);
     //i2cStop();
     //i2cStart();
-    i2cRepeatedStart();
-    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+//    i2cRepeatedStart();
+//    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
     //i2cStop();
+
+// do {
+//    fwDelayUs(10000,FW_DELAY_RANGE_100_MS);  // Wait 5 ms
+//    i2cRepeatedStart();
+//    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+// } while (state.i2cStatus != 0x0000);
+
     fwDelayUs(50000,FW_DELAY_RANGE_100_MS);  // Wait 50 ms
-    //i2cStart();
     i2cRepeatedStart();
     i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
 

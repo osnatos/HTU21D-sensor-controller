@@ -9,9 +9,9 @@
                ; Resource-specified definitions, if any
                .define AUXIO_I2C_SCL           11
                .define AUXIO_I2C_SDA           10
-               .define I2C_BASE_DELAY          55
+               .define I2C_BASE_DELAY          9
                .define I2C_EXT_DELAY           4
-               .define I2C_STRETCH_TIMEOUT_US  10
+               .define I2C_STRETCH_TIMEOUT_US  50
                .define I2C_WAIT_STRETCH_DELAY  5
 
 
@@ -258,7 +258,7 @@
                pFwTaskExecuteFuncTable:
 0069 ---- 007b                         dw          #htu21dtask/execute
                pFwTaskTerminateFuncTable:
-006a ---- 00de                         dw          #htu21dtask/terminate
+006a ---- 00d0                         dw          #htu21dtask/terminate
 
                ; Run-time logging log requests and masks, one bit for each struct, one word for each task
                pRtlTaskLogReqTable:
@@ -321,17 +321,23 @@
                ;?     i2cStart();
                ;?     i2cTx(I2C_OP_WRITE | ALS_I2C_ADDR);
                ;?     i2cTx(comand);
-               ;? //    i2cTx(TEMP_MEASUR_NO_HOLD);
-               ;? //    i2cStop();
+               ;?     //    i2cTx(TEMP_MEASUR_NO_HOLD);
+               ;?     //    i2cStop();
                ;?
                ;?     //fwDelayUs(10,FW_DELAY_RANGE_1_MS);
                ;?     //i2cStop();
                ;?     //i2cStart();
-               ;?     i2cRepeatedStart();
-               ;?     i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+               ;? //    i2cRepeatedStart();
+               ;? //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
                ;?     //i2cStop();
+               ;?
+               ;? // do {
+               ;? //    fwDelayUs(10000,FW_DELAY_RANGE_100_MS);  // Wait 5 ms
+               ;? //    i2cRepeatedStart();
+               ;? //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+               ;? // } while (state.i2cStatus != 0x0000);
+               ;?
                ;?     fwDelayUs(50000,FW_DELAY_RANGE_100_MS);  // Wait 50 ms
-               ;?     //i2cStart();
                ;?     i2cRepeatedStart();
                ;?     i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
                ;?
@@ -353,161 +359,159 @@
                ;? >       // Configure and start the next measurement
                ;? >       i2cStart();
 007b ---- 6000                         ld          R6, #0x0000
-007c ---- 14e5                         jsr         I2cStart
+007c ---- 14d7                         jsr         I2cStart
 007d ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >       i2cTx(I2C_OP_WRITE | ALS_I2C_ADDR);
 007e ---- 7080                         ld          R7, #128
 007f ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-0080 ---- 14fc                         jsr         I2cTxByte
+0080 ---- 14ee                         jsr         I2cTxByte
 0081 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >       i2cTx(comand);
 0082 ---- 70f3                         ld          R7, #243
 0083 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-0084 ---- 14fc                         jsr         I2cTxByte
+0084 ---- 14ee                         jsr         I2cTxByte
 0085 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
-               ;? >   //    i2cTx(TEMP_MEASUR_NO_HOLD);
-               ;? >   //    i2cStop();
+               ;? >       //    i2cTx(TEMP_MEASUR_NO_HOLD);
+               ;? >       //    i2cStop();
                ;? >
                ;? >       //fwDelayUs(10,FW_DELAY_RANGE_1_MS);
                ;? >       //i2cStop();
                ;? >       //i2cStart();
-               ;? >       i2cRepeatedStart();
-0086 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-0087 ---- 14df                         jsr         I2cRepeatedStart
-0088 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
-               ;? >       i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
-0089 ---- 7081                         ld          R7, #129
-008a ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-008b ---- 14fc                         jsr         I2cTxByte
-008c ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+               ;? >   //    i2cRepeatedStart();
+               ;? >   //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
                ;? >       //i2cStop();
+               ;? >
+               ;? >   // do {
+               ;? >   //    fwDelayUs(10000,FW_DELAY_RANGE_100_MS);  // Wait 5 ms
+               ;? >   //    i2cRepeatedStart();
+               ;? >   //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+               ;? >   // } while (state.i2cStatus != 0x0000);
+               ;? >
                ;? >       fwDelayUs(50000,FW_DELAY_RANGE_100_MS);  // Wait 50 ms
-008d ---- 704a                         ld          R7, #(((50000 * 24 ) + ((1 << 14) - 1)) >> 14)
-008e ---- 600e                         ld          R6, #14
-008f ---- 151a                         jsr         FwDelay
-               ;? >       //i2cStart();
+0086 ---- 704a                         ld          R7, #(((50000 * 24 ) + ((1 << 14) - 1)) >> 14)
+0087 ---- 600e                         ld          R6, #14
+0088 ---- 150c                         jsr         FwDelay
                ;? >       i2cRepeatedStart();
-0090 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-0091 ---- 14df                         jsr         I2cRepeatedStart
-0092 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+0089 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+008a ---- 14d1                         jsr         I2cRepeatedStart
+008b ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >       i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
-0093 ---- 7081                         ld          R7, #129
-0094 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-0095 ---- 14fc                         jsr         I2cTxByte
-0096 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+008c ---- 7081                         ld          R7, #129
+008d ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+008e ---- 14ee                         jsr         I2cTxByte
+008f ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >
                ;? >       U16 DataRegM;
                ;? >       U16 DataRegL;
                ;? >       U16 CsReg;
                ;? >
                ;? >       i2cRxAck(DataRegM);
-0097 ---- 7000                         ld          R7, #0x0000
-0098 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-0099 ---- 1520                         jsr         I2cRxByte
-009a ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
-009b ---- 8d47                         ld          R0, R7
+0090 ---- 7000                         ld          R7, #0x0000
+0091 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+0092 ---- 1512                         jsr         I2cRxByte
+0093 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+0094 ---- 8d47                         ld          R0, R7
                ;? >       i2cRxAck(DataRegL);
-009c ---- 7000                         ld          R7, #0x0000
-009d ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-009e ---- 1520                         jsr         I2cRxByte
-009f ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
-00a0 ---- 9d47                         ld          R1, R7
+0095 ---- 7000                         ld          R7, #0x0000
+0096 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+0097 ---- 1512                         jsr         I2cRxByte
+0098 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+0099 ---- 9d47                         ld          R1, R7
                ;? >       i2cRxNack(CsReg);
-00a1 ---- 7001                         ld          R7, #0x0001
-00a2 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00a3 ---- 1520                         jsr         I2cRxByte
-00a4 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+009a ---- 7001                         ld          R7, #0x0001
+009b ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+009c ---- 1512                         jsr         I2cRxByte
+009d ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >
                ;? >       i2cStop();
-00a5 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00a6 ---- 153f                         jsr         I2cStop
-00a7 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+009e ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+009f ---- 1531                         jsr         I2cStop
+00a0 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >
                ;? >       result = (DataRegM << 8) | (DataRegL & 0xFC);
-00a8 ---- 8da0                         lsl         R0, #8
-00a9 ---- 90fc                         and         R1, #252
-00aa ---- 8d09                         or          R0, R1
-00ab ---- 0c76                         st          R0, [#htu21dtask/output/tmp]
+00a1 ---- 8da0                         lsl         R0, #8
+00a2 ---- 90fc                         and         R1, #252
+00a3 ---- 8d09                         or          R0, R1
+00a4 ---- 0c76                         st          R0, [#htu21dtask/output/tmp]
                ;? ReadParam(output.hum, HUM_MEASUR_NO_HOLD);
                ;? >
                ;? >       // Configure and start the next measurement
                ;? >       i2cStart();
-00ac ---- 6000                         ld          R6, #0x0000
-00ad ---- 14e5                         jsr         I2cStart
-00ae ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+00a5 ---- 6000                         ld          R6, #0x0000
+00a6 ---- 14d7                         jsr         I2cStart
+00a7 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >       i2cTx(I2C_OP_WRITE | ALS_I2C_ADDR);
-00af ---- 7080                         ld          R7, #128
-00b0 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00b1 ---- 14fc                         jsr         I2cTxByte
-00b2 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+00a8 ---- 7080                         ld          R7, #128
+00a9 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+00aa ---- 14ee                         jsr         I2cTxByte
+00ab ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >       i2cTx(comand);
-00b3 ---- 70f5                         ld          R7, #245
-00b4 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00b5 ---- 14fc                         jsr         I2cTxByte
-00b6 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
-               ;? >   //    i2cTx(TEMP_MEASUR_NO_HOLD);
-               ;? >   //    i2cStop();
+00ac ---- 70f5                         ld          R7, #245
+00ad ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+00ae ---- 14ee                         jsr         I2cTxByte
+00af ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+               ;? >       //    i2cTx(TEMP_MEASUR_NO_HOLD);
+               ;? >       //    i2cStop();
                ;? >
                ;? >       //fwDelayUs(10,FW_DELAY_RANGE_1_MS);
                ;? >       //i2cStop();
                ;? >       //i2cStart();
-               ;? >       i2cRepeatedStart();
-00b7 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00b8 ---- 14df                         jsr         I2cRepeatedStart
-00b9 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
-               ;? >       i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
-00ba ---- 7081                         ld          R7, #129
-00bb ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00bc ---- 14fc                         jsr         I2cTxByte
-00bd ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+               ;? >   //    i2cRepeatedStart();
+               ;? >   //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
                ;? >       //i2cStop();
+               ;? >
+               ;? >   // do {
+               ;? >   //    fwDelayUs(10000,FW_DELAY_RANGE_100_MS);  // Wait 5 ms
+               ;? >   //    i2cRepeatedStart();
+               ;? >   //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+               ;? >   // } while (state.i2cStatus != 0x0000);
+               ;? >
                ;? >       fwDelayUs(50000,FW_DELAY_RANGE_100_MS);  // Wait 50 ms
-00be ---- 704a                         ld          R7, #(((50000 * 24 ) + ((1 << 14) - 1)) >> 14)
-00bf ---- 600e                         ld          R6, #14
-00c0 ---- 151a                         jsr         FwDelay
-               ;? >       //i2cStart();
+00b0 ---- 704a                         ld          R7, #(((50000 * 24 ) + ((1 << 14) - 1)) >> 14)
+00b1 ---- 600e                         ld          R6, #14
+00b2 ---- 150c                         jsr         FwDelay
                ;? >       i2cRepeatedStart();
-00c1 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00c2 ---- 14df                         jsr         I2cRepeatedStart
-00c3 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+00b3 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+00b4 ---- 14d1                         jsr         I2cRepeatedStart
+00b5 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >       i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
-00c4 ---- 7081                         ld          R7, #129
-00c5 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00c6 ---- 14fc                         jsr         I2cTxByte
-00c7 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+00b6 ---- 7081                         ld          R7, #129
+00b7 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+00b8 ---- 14ee                         jsr         I2cTxByte
+00b9 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >
                ;? >       U16 DataRegM;
                ;? >       U16 DataRegL;
                ;? >       U16 CsReg;
                ;? >
                ;? >       i2cRxAck(DataRegM);
-00c8 ---- 7000                         ld          R7, #0x0000
-00c9 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00ca ---- 1520                         jsr         I2cRxByte
-00cb ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
-00cc ---- 8d47                         ld          R0, R7
+00ba ---- 7000                         ld          R7, #0x0000
+00bb ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+00bc ---- 1512                         jsr         I2cRxByte
+00bd ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+00be ---- 8d47                         ld          R0, R7
                ;? >       i2cRxAck(DataRegL);
-00cd ---- 7000                         ld          R7, #0x0000
-00ce ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00cf ---- 1520                         jsr         I2cRxByte
-00d0 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
-00d1 ---- 9d47                         ld          R1, R7
+00bf ---- 7000                         ld          R7, #0x0000
+00c0 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+00c1 ---- 1512                         jsr         I2cRxByte
+00c2 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+00c3 ---- 9d47                         ld          R1, R7
                ;? >       i2cRxNack(CsReg);
-00d2 ---- 7001                         ld          R7, #0x0001
-00d3 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00d4 ---- 1520                         jsr         I2cRxByte
-00d5 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+00c4 ---- 7001                         ld          R7, #0x0001
+00c5 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+00c6 ---- 1512                         jsr         I2cRxByte
+00c7 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >
                ;? >       i2cStop();
-00d6 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
-00d7 ---- 153f                         jsr         I2cStop
-00d8 ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
+00c8 ---- 6877                         ld          R6, [#htu21dtask/state/i2cStatus]
+00c9 ---- 1531                         jsr         I2cStop
+00ca ---- 6c77                         st          R6, [#htu21dtask/state/i2cStatus]
                ;? >
                ;? >       result = (DataRegM << 8) | (DataRegL & 0xFC);
-00d9 ---- 8da0                         lsl         R0, #8
-00da ---- 90fc                         and         R1, #252
-00db ---- 8d09                         or          R0, R1
-00dc ---- 0c75                         st          R0, [#htu21dtask/output/hum]
+00cb ---- 8da0                         lsl         R0, #8
+00cc ---- 90fc                         and         R1, #252
+00cd ---- 8d09                         or          R0, R1
+00ce ---- 0c75                         st          R0, [#htu21dtask/output/hum]
                ;?
                ;? //output.hum = (DataRegM << 8) | DataRegL;  // hum = (HumRegH << 8) | HumRegL;
                ;? //output.tmp = (DataRegM << 8) | DataRegL;  // tmp = (TemRegH << 8) | TemRegL&0xFC;
@@ -515,7 +519,7 @@
                ;? //macro pulseLedPinMultiple(pulseCount) {
                ;? //    U16 pulsesLeft = pulseCount;
                htu21dtask/executeDone:
-00dd ---- adb7                         rts
+00cf ---- adb7                         rts
 
 
 
@@ -523,7 +527,7 @@
                htu21dtask/terminate:
                ;?
                htu21dtask/terminateDone:
-00de ---- adb7                         rts
+00d0 ---- adb7                         rts
                .segment end "Task: HTU21Dtask"
 
 
@@ -532,31 +536,31 @@
                ;     R5
                I2cRepeatedStart:
                                        ; Wait T_LOW (SDA is already pull-up)
-00df ---- 53c6                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (1))
-00e0 ---- 14ea                         jsr         I2cWaitDelay
+00d1 ---- 53f4                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (1))
+00d2 ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; SCL = pull-up
-00e1 ---- 670f                         iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+00d3 ---- 670f                         iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
                                        ; Wait for SCL stretching to end or time out
-00e2 ---- 14ed                         jsr         I2cWaitSclStretch
+00d4 ---- 14df                         jsr         I2cWaitSclStretch
 
                                        ; Wait T_SU_STA
-00e3 ---- 53c6                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (1))
-00e4 ---- 14ea                         jsr         I2cWaitDelay
+00d5 ---- 53f4                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (1))
+00d6 ---- 14dc                         jsr         I2cWaitDelay
                I2cStart:
                                        ; SDA = driven low
-00e5 ---- 460f                         iobclr      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+00d7 ---- 460f                         iobclr      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
 
                                        ; Wait T_HD_STA
-00e6 ---- 53ca                         ld          R5, #-((I2C_BASE_DELAY) - (1))
-00e7 ---- 14ea                         jsr         I2cWaitDelay
+00d8 ---- 53f8                         ld          R5, #-((I2C_BASE_DELAY) - (1))
+00d9 ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; SCL = driven low
-00e8 ---- 470f                         iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+00da ---- 470f                         iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
                                        ; Done
-00e9 ---- adb7                         rts
+00db ---- adb7                         rts
 
 
 
@@ -568,11 +572,11 @@
                ;     R5
                I2cWaitDelay:
                                        ; Wait for the specified number of cycles
-00ea ---- d802 /waitLoop:                  add         R5, #2
-00eb ---- defe                         bneg        /waitLoop
+00dc ---- d802 /waitLoop:                  add         R5, #2
+00dd ---- defe                         bneg        /waitLoop
 
                                        ; Done
-00ec ---- adb7                         rts
+00de ---- adb7                         rts
 
 
 
@@ -587,29 +591,29 @@
                ;     R5
                I2cWaitSclStretch:
                                        ; Load the timeout (up to 20 ms) loop counter = configured number of us
-00ed ---- 53f6                         ld          R5, #(-I2C_STRETCH_TIMEOUT_US)
+00df ---- 53ce                         ld          R5, #(-I2C_STRETCH_TIMEOUT_US)
                /waitLoop:
                                            ; If SCL is high, we're done
-00ee ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
-00ef ---- ae0b                             biob1       /done
+00e0 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
+00e1 ---- ae0b                             biob1       /done
                                            ; Unroll the loop to 12 instructions = 1 per loop for faster response
-00f0 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
-00f1 ---- ae09                             biob1       /done
-00f2 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
-00f3 ---- ae07                             biob1       /done
-00f4 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
-00f5 ---- ae05                             biob1       /done
-00f6 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
-00f7 ---- ae03                             biob1       /done
+00e2 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
+00e3 ---- ae09                             biob1       /done
+00e4 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
+00e5 ---- ae07                             biob1       /done
+00e6 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
+00e7 ---- ae05                             biob1       /done
+00e8 ---- 2713                             iobtst      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SCL >> 3))]
+00e9 ---- ae03                             biob1       /done
 
-00f8 ---- d801                         add         R5, #1;
-00f9 ---- bef4                         bnz         /waitLoop
+00ea ---- d801                         add         R5, #1;
+00eb ---- bef4                         bnz         /waitLoop
 
                /timeout:               ; Timeout has occurred, so OR it into the flags and bail out
-00fa ---- e202                         or          R6, #0x0002
+00ec ---- e202                         or          R6, #0x0002
 
                /done:                  ; Done
-00fb ---- adb7                         rts
+00ed ---- adb7                         rts
 
 
 
@@ -626,69 +630,69 @@
                ;     R5
                I2cTxByte:
                                        ; Bail out if an error has occurred
-00fc ---- ea00                         cmp         R6, #0
-00fd ---- be1b                         bnz         /done
+00ee ---- ea00                         cmp         R6, #0
+00ef ---- be1b                         bnz         /done
 
 
                                        ; Transmit each bit in the data byte ...
-00fe ---- b50e                         loop        #8, /byteLoopEnd
+00f0 ---- b50e                         loop        #8, /byteLoopEnd
 
                                            ; Output the bit to SDA
-00ff ---- fda1                             lsl         R7, #1
-0100 8601 fc00                             tst         R7, #0x0100
-0102 ---- b602                             bz          /dataSdaLow
-0103 ---- 660f /dataSdaHigh:                   iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
-0104 ---- 8e02                             bra         /dataSdaDone
-0105 ---- 460f /dataSdaLow:                    iobclr      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
-0106 ---- fd47                             nop
+00f1 ---- fda1                             lsl         R7, #1
+00f2 8601 fc00                             tst         R7, #0x0100
+00f4 ---- b602                             bz          /dataSdaLow
+00f5 ---- 660f /dataSdaHigh:                   iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+00f6 ---- 8e02                             bra         /dataSdaDone
+00f7 ---- 460f /dataSdaLow:                    iobclr      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+00f8 ---- fd47                             nop
                /dataSdaDone:
                                            ; Wait T_LOW
-0107 ---- 53cc                             ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (7))
-0108 ---- 14ea                             jsr         I2cWaitDelay
+00f9 ---- 53fa                             ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (7))
+00fa ---- 14dc                             jsr         I2cWaitDelay
 
                                            ; SCL = pull-up
-0109 ---- 670f                             iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+00fb ---- 670f                             iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
                                            ; Wait for SCL stretching to end or time out
-010a ---- 14ed                             jsr         I2cWaitSclStretch
+00fc ---- 14df                             jsr         I2cWaitSclStretch
 
                                            ; Wait T_HIGH
-010b ---- 53cf                             ld          R5, #-(I2C_BASE_DELAY - (I2C_WAIT_STRETCH_DELAY + 1))
-010c ---- 14ea                             jsr         I2cWaitDelay
+00fd ---- 53fd                             ld          R5, #-(I2C_BASE_DELAY - (I2C_WAIT_STRETCH_DELAY + 1))
+00fe ---- 14dc                             jsr         I2cWaitDelay
 
                                            ; SCL = driven low
-010d ---- 470f                             iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+00ff ---- 470f                             iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
                /byteLoopEnd:
 
                                        ; Receive the ACK bit
                                        ; SDA = pull-up
-010e ---- 660f                         iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+0100 ---- 660f                         iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
 
                                        ; Wait T_LOW
-010f ---- 53c6                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (1))
-0110 ---- 14ea                         jsr         I2cWaitDelay
+0101 ---- 53f4                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (1))
+0102 ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; SCL = pull-up
-0111 ---- 670f                         iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+0103 ---- 670f                         iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
                                        ; Wait for SCL stretching to end or time out
-0112 ---- 14ed                         jsr         I2cWaitSclStretch
+0104 ---- 14df                         jsr         I2cWaitSclStretch
 
                                        ; Wait T_HIGH
-0113 ---- 53cc                         ld          R5, #-((I2C_BASE_DELAY) - (3))
-0114 ---- 14ea                         jsr         I2cWaitDelay
+0105 ---- 53fa                         ld          R5, #-((I2C_BASE_DELAY) - (3))
+0106 ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; Read and store the SDA value in the status word
-0115 ---- 2613                         iobtst      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SDA >> 3))]
-0116 ---- a601                         biob0       /ackSdaLow
-0117 ---- e201                             or          R6, #0x01
+0107 ---- 2613                         iobtst      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SDA >> 3))]
+0108 ---- a601                         biob0       /ackSdaLow
+0109 ---- e201                             or          R6, #0x01
                /ackSdaLow:
                                        ; SCL = driven low
-0118 ---- 470f                         iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+010a ---- 470f                         iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
 
                /done:                  ; Done
-0119 ---- adb7                         rts
+010b ---- adb7                         rts
 
 
 
@@ -704,16 +708,16 @@
                ;     R6
                FwDelay:
                                        ; Set the delay
-011a ---- fb0c                         out         R7, [#IOP_TIMER01_T0TARGET]
+010c ---- fb0c                         out         R7, [#IOP_TIMER01_T0TARGET]
 
                                        ; Configure the timer (from clock, single-mode, prescaler exponent = R6)
-011b ---- eda4                         lsl         R6, #4
-011c ---- eb09                         out         R6, [#IOP_TIMER01_T0CFG]
+010d ---- eda4                         lsl         R6, #4
+010e ---- eb09                         out         R6, [#IOP_TIMER01_T0CFG]
 
                                        ; Start the timer, wait for it to trigger, and stop it
-011d ---- 640b                         iobset      #0, [#IOP_TIMER01_T0CTL]
-011e ---- cdb1                         wev1        #WEVSEL_TIMER0
-011f ---- adb7                         rts
+010f ---- 640b                         iobset      #0, [#IOP_TIMER01_T0CTL]
+0110 ---- cdb1                         wev1        #WEVSEL_TIMER0
+0111 ---- adb7                         rts
 
 
 
@@ -730,72 +734,72 @@
                ;     R5
                I2cRxByte:
                                        ; Bail out if an error has occurred
-0120 ---- ea00                         cmp         R6, #0
-0121 ---- be1c                         bnz         /done
+0112 ---- ea00                         cmp         R6, #0
+0113 ---- be1c                         bnz         /done
 
 
                                        ; Receive each bit in the data byte ...
-0122 ---- b50b                         loop        #8, /byteLoopEnd
+0114 ---- b50b                         loop        #8, /byteLoopEnd
 
                                            ; SDA = pull-up
-0123 ---- 660f                             iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+0115 ---- 660f                             iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
 
                                            ; Wait T_LOW
-0124 ---- 53c7                             ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (2))
-0125 ---- 14ea                             jsr         I2cWaitDelay
+0116 ---- 53f5                             ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (2))
+0117 ---- 14dc                             jsr         I2cWaitDelay
 
                                            ; SCL = pull-up
-0126 ---- 670f                             iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+0118 ---- 670f                             iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
                                            ; Wait for SCL stretching to end or time out
-0127 ---- 14ed                             jsr         I2cWaitSclStretch
+0119 ---- 14df                             jsr         I2cWaitSclStretch
 
                                            ; Wait T_HIGH
-0128 ---- 53d1                             ld          R5, #-((I2C_BASE_DELAY) - (I2C_WAIT_STRETCH_DELAY + 3))
-0129 ---- 14ea                             jsr         I2cWaitDelay
+011a ---- 53ff                             ld          R5, #-((I2C_BASE_DELAY) - (I2C_WAIT_STRETCH_DELAY + 3))
+011b ---- 14dc                             jsr         I2cWaitDelay
 
                                            ; Read and store SDA
-012a ---- fda1                             lsl         R7, #1
-012b ---- 2613                             iobtst      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SDA >> 3))]
-012c ---- a601                             biob0       /dataSdaLow
-012d ---- f201                                 or          R7, #0x01
+011c ---- fda1                             lsl         R7, #1
+011d ---- 2613                             iobtst      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODIN + (AUXIO_I2C_SDA >> 3))]
+011e ---- a601                             biob0       /dataSdaLow
+011f ---- f201                                 or          R7, #0x01
                /dataSdaLow:
                                            ; SCL = driven low
-012e ---- 470f                             iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+0120 ---- 470f                             iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
                /byteLoopEnd:
 
                                        ; Transmit the ACK bit, which is now in bit 8 of the shift register
                                        ; Output the bit to SDA
-012f 8601 fc00                         tst         R7, #0x0100
-0131 ---- b602                         bz          /ackSdaLow
-0132 ---- 660f /ackSdaHigh:                iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
-0133 ---- 8e02                         bra         /ackSdaDone
-0134 ---- 460f /ackSdaLow:                 iobclr      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
-0135 ---- fd47                         nop
+0121 8601 fc00                         tst         R7, #0x0100
+0123 ---- b602                         bz          /ackSdaLow
+0124 ---- 660f /ackSdaHigh:                iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+0125 ---- 8e02                         bra         /ackSdaDone
+0126 ---- 460f /ackSdaLow:                 iobclr      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+0127 ---- fd47                         nop
                /ackSdaDone:
                                        ; Wait T_LOW
-0136 ---- 53cb                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (6))
-0137 ---- 14ea                         jsr         I2cWaitDelay
+0128 ---- 53f9                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (6))
+0129 ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; SCL = pull-up
-0138 ---- 670f                         iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+012a ---- 670f                         iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
                                        ; Wait for SCL stretching to end or time out
-0139 ---- 14ed                         jsr         I2cWaitSclStretch
+012b ---- 14df                         jsr         I2cWaitSclStretch
 
                                        ; Wait T_HIGH
-013a ---- 53cf                         ld          R5, #-((I2C_BASE_DELAY) - (I2C_WAIT_STRETCH_DELAY + 1))
-013b ---- 14ea                         jsr         I2cWaitDelay
+012c ---- 53fd                         ld          R5, #-((I2C_BASE_DELAY) - (I2C_WAIT_STRETCH_DELAY + 1))
+012d ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; SCL = driven low
-013c ---- 470f                         iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+012e ---- 470f                         iobclr      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
                                        ; Mask the ACK bit in the received data
-013d ---- f0ff                         and         R7, #0xFF
+012f ---- f0ff                         and         R7, #0xFF
 
 
                /done:                  ; Done
-013e ---- adb7                         rts
+0130 ---- adb7                         rts
 
 
 
@@ -804,32 +808,32 @@
                ;     R5
                I2cStop:
                                        ; SDA = driven low
-013f ---- 460f                         iobclr      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+0131 ---- 460f                         iobclr      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
 
                                        ; Wait T_LOW
-0140 ---- 53c6                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (1))
-0141 ---- 14ea                         jsr         I2cWaitDelay
+0132 ---- 53f4                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (1))
+0133 ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; SCL = pull-up
-0142 ---- 670f                         iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
+0134 ---- 670f                         iobset      #(AUXIO_I2C_SCL & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SCL >> 3))]
 
                                        ; Wait for SCL stretching to end or time out
-0143 ---- 14ed                         jsr         I2cWaitSclStretch
+0135 ---- 14df                         jsr         I2cWaitSclStretch
 
                                        ; Wait T_SU_STO
-0144 ---- 53cf                         ld          R5, #-((I2C_BASE_DELAY) - (I2C_WAIT_STRETCH_DELAY + 1))
-0145 ---- 14ea                         jsr         I2cWaitDelay
+0136 ---- 53fd                         ld          R5, #-((I2C_BASE_DELAY) - (I2C_WAIT_STRETCH_DELAY + 1))
+0137 ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; SDA = pull-up
-0146 ---- 660f                         iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
+0138 ---- 660f                         iobset      #(AUXIO_I2C_SDA & 0x7), [#(IOP_AIODIO0_GPIODOUT + (AUXIO_I2C_SDA >> 3))]
 
                                        ; Wait T_BUF
-0147 ---- 53c7                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (2))
-0148 ---- 14ea                         jsr         I2cWaitDelay
+0139 ---- 53f5                         ld          R5, #-((I2C_BASE_DELAY + I2C_EXT_DELAY) - (2))
+013a ---- 14dc                         jsr         I2cWaitDelay
 
                                        ; Done
-0149 ---- adb7                         rts
+013b ---- adb7                         rts
                .segment end "Procedure Library"
 
 
-; Generated by NATAN-MAIN at 2020-10-31 22:21:40.109
+; Generated by NATAN-MAIN at 2020-10-31 23:22:57.891
