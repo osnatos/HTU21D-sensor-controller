@@ -19,11 +19,18 @@
         <tattr name="ALS_I2C_ADDR" type="expr_hex" content="const" scope="task" min="0" max="65535">0x80</tattr>
         <tattr name="HUM_MEASUR_HOLD" desc="Trigger Humidity Measurement. Hold master" type="expr_hex" content="const" scope="task" min="0" max="65535">0xE5</tattr>
         <tattr name="HUM_MEASUR_NO_HOLD" desc="Trigger Temperature Measurement. No Hold master" type="expr_hex" content="const" scope="task" min="0" max="65535">0xF5</tattr>
+        <tattr name="POLYNOMIAL" type="expr_hex" content="const" scope="task" min="0" max="65535">0x131</tattr>
         <tattr name="RdBufLen" type="expr" content="const" scope="task" min="0" max="65535">6</tattr>
         <tattr name="TEMP_MEASUR_HOLD" desc="Trigger Temperature Measurement. Hold master" type="expr_hex" content="const" scope="task" min="0" max="65535">0xE3</tattr>
         <tattr name="TEMP_MEASUR_NO_HOLD" desc="Trigger Temperature Measurement. No Hold master" type="expr_hex" content="const" scope="task" min="0" max="65535">0xF3</tattr>
+        <tattr name="TwoByteArreyLen" type="expr" content="const" scope="task" min="0" max="65535">2</tattr>
         <tattr name="output.hum" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
+        <tattr name="output.humCRC" type="expr_hex" content="struct" scope="task" min="0" max="65535">0</tattr>
         <tattr name="output.tmp" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
+        <tattr name="output.tmpCRC" type="expr_hex" content="struct" scope="task" min="0" max="65535">0</tattr>
+        <tattr name="state.TwoByte" size="TwoByteArreyLen" type="expr_hex" content="struct_array" scope="task" min="0" max="65535">0</tattr>
+        <tattr name="state.humOK" type="expr" content="struct" scope="task" min="0" max="65535">1</tattr>
+        <tattr name="state.tempOK" type="expr" content="struct" scope="task" min="0" max="65535">1</tattr>
         <resource_ref name="ADC" enabled="0"/>
         <resource_ref name="AON Domain Functionality" enabled="0"/>
         <resource_ref name="Accumulator-Based Math" enabled="0"/>
@@ -43,7 +50,7 @@
         <resource_ref name="Dynamic Power Control" enabled="0"/>
         <resource_ref name="GPIO Event Trigger" enabled="0"/>
         <resource_ref name="I2C Master" enabled="1">
-            <rattr name="SCL frequency">1</rattr>
+            <rattr name="SCL frequency">0</rattr>
             <rattr name="SCL stretch timeout">50</rattr>
             <io_usage>
                 <uattr name="SCL pin/0000">DIO4</uattr>
@@ -140,7 +147,69 @@
         <sccode name="event1" init_power_mode="0"><![CDATA[]]></sccode>
         <sccode name="event2" init_power_mode="0"><![CDATA[]]></sccode>
         <sccode name="event3" init_power_mode="0"><![CDATA[]]></sccode>
-        <sccode name="execute" init_power_mode="0"><![CDATA[macro ReadParam(result, comand) {
+        <sccode name="execute" init_power_mode="0"><![CDATA[//=============================================================================================
+macro HTU21_OneByteCrc(data, CS, result) {
+
+    U16 crc = CS;
+    crc ^= data;
+    for (U16 n = 0; n < 8; n++) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ POLYNOMIAL;
+        } else {
+            crc = (crc << 1);
+        }
+    }
+    //----
+    result = crc;
+}
+//=============================================================================================
+
+macro HTU21_CSumIsOk(data0, data1, checksum,result) {
+
+    U16 chekSum;
+    U16 crc;
+    HTU21_OneByteCrc(data0, 0, chekSum);
+    HTU21_OneByteCrc(data1, chekSum,crc);
+    //----
+    if (crc != checksum) {
+        result = -1;
+    } else {
+        result = 0;
+    }
+
+
+}
+//=============================================================================================
+macro HTU21_CheckCrc(data0, data1, checksum,result) {
+
+    U16 crc = 0;
+    crc ^= data0;
+    for (U16 n = 0; n < 8; n++) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ POLYNOMIAL;
+        } else {
+            crc = (crc << 1);
+        }
+    }
+    //----
+    crc ^= data1;
+    for (U16 n = 0; n < 8; n++) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ POLYNOMIAL;
+        } else {
+            crc = (crc << 1);
+        }
+    }
+    //----
+    if (crc != checksum) {
+        result = -1;
+    } else {
+        result = 0;
+    }
+
+}
+//=============================================================================================
+macro ReadParam(result, CRC, comand) {
 
     // Configure and start the next measurement
     i2cStart();
@@ -152,15 +221,15 @@
     //fwDelayUs(10,FW_DELAY_RANGE_1_MS);
     //i2cStop();
     //i2cStart();
-//    i2cRepeatedStart();
-//    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+    //    i2cRepeatedStart();
+    //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
     //i2cStop();
 
-// do {
-//    fwDelayUs(10000,FW_DELAY_RANGE_100_MS);  // Wait 5 ms
-//    i2cRepeatedStart();
-//    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
-// } while (state.i2cStatus != 0x0000);
+    // do {
+    //    fwDelayUs(10000,FW_DELAY_RANGE_100_MS);  // Wait 5 ms
+    //    i2cRepeatedStart();
+    //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+    // } while (state.i2cStatus != 0x0000);
 
     fwDelayUs(50000,FW_DELAY_RANGE_100_MS);  // Wait 50 ms
     i2cRepeatedStart();
@@ -175,24 +244,37 @@
     i2cRxNack(CsReg);
 
     i2cStop();
-
+    //------
+    U16 CRCok;
+    HTU21_CheckCrc(DataRegM, DataRegL, CsReg, CRCok);
+ //   HTU21_CSumIsOk(DataRegM, DataRegL, CsReg, CRCok);
+    if(CRCok == 0) {
+        result = (DataRegM << 8) | (DataRegL & 0xFC);
+         state.tempOK=0;
+    } else {
+        result=0xFF00;
+         state.tempOK=1;
+    }
     result = (DataRegM << 8) | (DataRegL & 0xFC);
+    //result = (DataRegM << 8) | DataRegL;
+    CRC = CsReg;
 }
-//---------------------------------------------------------------------------------------------
-ReadParam(output.tmp, TEMP_MEASUR_NO_HOLD);
-ReadParam(output.hum, HUM_MEASUR_NO_HOLD);
-
-//output.hum = (DataRegM << 8) | DataRegL;  // hum = (HumRegH << 8) | HumRegL;
-//output.tmp = (DataRegM << 8) | DataRegL;  // tmp = (TemRegH << 8) | TemRegL&0xFC;
-
-//macro pulseLedPinMultiple(pulseCount) {
-//    U16 pulsesLeft = pulseCount;]]></sccode>
+//=============================================================================================
+ReadParam(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
+ReadParam(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+//----------------------------------------------------------------------------------------------
+// Schedule the next execution
+fwScheduleTask(1);
+//----------------------------------------------------------------------------------------------
+// Notify the application
+fwGenAlertInterrupt();
+//----------------------------------------------------------------------------------------------]]></sccode>
         <sccode name="initialize" init_power_mode="0"><![CDATA[// Schedule the first execution
 fwScheduleTask(1);]]></sccode>
         <sccode name="terminate" init_power_mode="0"><![CDATA[]]></sccode>
         <event_trigger active_count="1">0,1,2,3</event_trigger>
         <tt_iter>run_execute,wait_1s</tt_iter>
-        <tt_struct></tt_struct>
+        <tt_struct>state.tempOK</tt_struct>
         <rtl_struct></rtl_struct>
         <rtl_task_sel en="1" struct_log_list="output"/>
     </task>
