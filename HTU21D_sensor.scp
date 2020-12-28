@@ -33,10 +33,7 @@
         <tattr name="input.WriteRequest" desc="Request to write in the user's register." type="expr" content="struct" scope="task" min="0" max="1">1</tattr>
         <tattr name="output.UserRegContent" desc="Content of the user register." type="expr_hex" content="struct" scope="task" min="0" max="65535">1</tattr>
         <tattr name="output.hum" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
-        <tattr name="output.humCRC" type="expr_hex" content="struct" scope="task" min="0" max="65535">0</tattr>
         <tattr name="output.tmp" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
-        <tattr name="output.tmpCRC" type="expr_hex" content="struct" scope="task" min="0" max="65535">0</tattr>
-        <tattr name="state.TwoByte" size="TwoByteArreyLen" type="expr_hex" content="struct_array" scope="task" min="0" max="65535">0</tattr>
         <tattr name="state.humOK" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
         <tattr name="state.tempOK" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
         <resource_ref name="ADC" enabled="0"/>
@@ -185,7 +182,7 @@ macro HTU21_CheckCrc(data0, data1, checksum,result) {
 
 }
 //=============================================================================================
-macro ReadTemp(result, CRC, comand) {
+macro ReadTemp(result, comand) {
 
     // Configure and start the next measurement
     i2cStart();
@@ -220,10 +217,10 @@ macro ReadTemp(result, CRC, comand) {
     }
     //    result = (DataRegM << 8) | (DataRegL & 0xFC);
     //result = (DataRegM << 8) | DataRegL;
-    CRC = CsReg;
+   // CRC = CsReg;
 }
 //=============================================================================================
-macro ReadHum(result, CRC, comand) {
+macro ReadHum(result, comand) {
 
     // Configure and start the next measurement
     i2cStart();
@@ -258,7 +255,7 @@ macro ReadHum(result, CRC, comand) {
     }
     //    result = (DataRegM << 8) | (DataRegL & 0xFC);
     //result = (DataRegM << 8) | DataRegL;
-    CRC = CsReg;
+    //CRC = CsReg;
 }
 //=============================================================================================
 macro ReadUserReg() {
@@ -295,24 +292,11 @@ if(input.ResetRequest==1) {
         if(input.ReadRequest==1) {
             ReadUserReg();
         }
-        ReadTemp(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
-        ReadHum(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+        ReadTemp(output.tmp, TEMP_MEASUR_NO_HOLD );
+        ReadHum(output.hum, HUM_MEASUR_NO_HOLD);
     }
-
-
-
-    //ReadParam(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
-    //ReadParam(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
-
-    //          ReadTemp(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
-    //          ReadHum(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
-
-
-    //   i2cDeviceWriteReg8(ALS_I2C_ADDR, WRITE_REG, cfg.UserRegData);
-    //    i2cDeviceReadReg8(ALS_I2C_ADDR, READ_REG; output.UserRegContent);
     //-------
 }
-
 //----------------------------------------------------------------------------------------------
 // Schedule the next execution
 fwScheduleTask(1);
