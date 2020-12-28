@@ -156,38 +156,6 @@
         <sccode name="event2" init_power_mode="0"><![CDATA[]]></sccode>
         <sccode name="event3" init_power_mode="0"><![CDATA[]]></sccode>
         <sccode name="execute" init_power_mode="0"><![CDATA[//=============================================================================================
-macro HTU21_OneByteCrc(data, CS, result) {
-
-    U16 crc = CS;
-    crc ^= data;
-    for (U16 n = 0; n < 8; n++) {
-        if (crc & 0x80) {
-            crc = (crc << 1) ^ POLYNOMIAL;
-        } else {
-            crc = (crc << 1);
-        }
-    }
-    //----
-    result = crc;
-}
-//=============================================================================================
-
-macro HTU21_CSumIsOk(data0, data1, checksum,result) {
-
-    U16 chekSum;
-    U16 crc;
-    HTU21_OneByteCrc(data0, 0, chekSum);
-    HTU21_OneByteCrc(data1, chekSum,crc);
-    //----
-    if (crc != checksum) {
-        result = -1;
-    } else {
-        result = 0;
-    }
-
-
-}
-//=============================================================================================
 macro HTU21_CheckCrc(data0, data1, checksum,result) {
 
     U16 crc = 0;
@@ -250,7 +218,7 @@ macro ReadTemp(result, CRC, comand) {
         result=0;
         state.tempOK=0;
     }
-//    result = (DataRegM << 8) | (DataRegL & 0xFC);
+    //    result = (DataRegM << 8) | (DataRegL & 0xFC);
     //result = (DataRegM << 8) | DataRegL;
     CRC = CsReg;
 }
@@ -288,19 +256,19 @@ macro ReadHum(result, CRC, comand) {
         result=0;
         state.humOK=0;
     }
-//    result = (DataRegM << 8) | (DataRegL & 0xFC);
+    //    result = (DataRegM << 8) | (DataRegL & 0xFC);
     //result = (DataRegM << 8) | DataRegL;
     CRC = CsReg;
 }
 //=============================================================================================
 macro ReadUserReg() {
-   i2cDeviceReadReg8(ALS_I2C_ADDR, READ_REG; output.UserRegContent);
-   input.ReadRequest=0;
+    i2cDeviceReadReg8(ALS_I2C_ADDR, READ_REG; output.UserRegContent);
+    input.ReadRequest=0;
 }
 //=============================================================================================
 macro WriteUserReg() {
-   i2cDeviceWriteReg8(ALS_I2C_ADDR, WRITE_REG, cfg.UserRegData);
-   input.WriteRequest=0;
+    i2cDeviceWriteReg8(ALS_I2C_ADDR, WRITE_REG, cfg.UserRegData);
+    input.WriteRequest=0;
 }
 //=============================================================================================
 macro SoftReset() {
@@ -314,36 +282,36 @@ macro SoftReset() {
     input.ResetRequest=0;
 }
 //=============================================================================================
-    if(input.ResetRequest==1) {
-            SoftReset();
-            ReadUserReg();
+if(input.ResetRequest==1) {
+    SoftReset();
+    ReadUserReg();
+} else {
+    //-------
+    if(input.WriteRequest==1) {
+        WriteUserReg();
+        ReadUserReg();
+
     } else {
-            //-------
-            if(input.WriteRequest==1) {
-                WriteUserReg();
-                ReadUserReg();
-
-            } else {
-                if(input.ReadRequest==1) {
-                   ReadUserReg();
-                }
-                ReadTemp(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
-                ReadHum(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
-            }
+        if(input.ReadRequest==1) {
+            ReadUserReg();
+        }
+        ReadTemp(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
+        ReadHum(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+    }
 
 
 
-             //ReadParam(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
-             //ReadParam(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+    //ReadParam(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
+    //ReadParam(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
 
-  //          ReadTemp(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
-  //          ReadHum(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+    //          ReadTemp(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
+    //          ReadHum(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
 
 
-         //   i2cDeviceWriteReg8(ALS_I2C_ADDR, WRITE_REG, cfg.UserRegData);
-        //    i2cDeviceReadReg8(ALS_I2C_ADDR, READ_REG; output.UserRegContent);
-            //-------
-     }
+    //   i2cDeviceWriteReg8(ALS_I2C_ADDR, WRITE_REG, cfg.UserRegData);
+    //    i2cDeviceReadReg8(ALS_I2C_ADDR, READ_REG; output.UserRegContent);
+    //-------
+}
 
 //----------------------------------------------------------------------------------------------
 // Schedule the next execution
