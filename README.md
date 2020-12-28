@@ -1,5 +1,5 @@
 # HTU21D-sensor-controller
-The sensor controller is designed to work with the HTU21D sensor,using the Sensor Controller Engine of CC2640R2F MCU. 
+The sensor controller is designed to work with the [HTU21D sensor](https://www.te.com/commerce/DocumentDelivery/DDEController?Action=showdoc&DocId=Data+Sheet%7FHPC199_6%7FA6%7Fpdf%7FEnglish%7FENG_DS_HPC199_6_A6.pdf%7FCAT-HSC0004),using the Sensor Controller Engine of CC2640R2F MCU. 
 * Project name: HTU21D sensor 
 * Project file: HTU21D_sensor.scp 
 * Operating system: TI-RTOS 
