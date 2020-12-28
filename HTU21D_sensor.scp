@@ -7,30 +7,38 @@
     <pattr name="Chip package">QFN48 7x7 RGZ</pattr>
     <pattr name="Chip revision">-</pattr>
     <pattr name="Clock in active mode">0</pattr>
-    <pattr name="Code prefix"></pattr>
+    <pattr name="Code prefix">hdu21d</pattr>
     <pattr name="Default power mode">0</pattr>
     <pattr name="Operating system">TI-RTOS</pattr>
-    <pattr name="Output directory">D:/Projects/Sensor Controller Studio/HTU21D_sensor</pattr>
+    <pattr name="Output directory">D:/Projects/Sensor Controller Studio/HTU21D_sensor/scif_files</pattr>
     <pattr name="RTC tick interval (16.16 format)">2000</pattr>
     <pattr name="Run-time logging UART RX pin"></pattr>
     <pattr name="Run-time logging UART TX pin"></pattr>
     <task name="HTU21Dtask">
         <desc><![CDATA[]]></desc>
-        <tattr name="ALS_I2C_ADDR" type="expr_hex" content="const" scope="task" min="0" max="65535">0x80</tattr>
-        <tattr name="HUM_MEASUR_HOLD" desc="Trigger Humidity Measurement. Hold master" type="expr_hex" content="const" scope="task" min="0" max="65535">0xE5</tattr>
-        <tattr name="HUM_MEASUR_NO_HOLD" desc="Trigger Temperature Measurement. No Hold master" type="expr_hex" content="const" scope="task" min="0" max="65535">0xF5</tattr>
+        <tattr name="ALS_I2C_ADDR" desc="I2C Slave address." type="expr_hex" content="const" scope="task" min="0" max="65535">0x80</tattr>
+        <tattr name="HUM_MEASUR_HOLD" desc="Command code: Trigger Humidity Measurement. Hold master." type="expr_hex" content="const" scope="task" min="0" max="65535">0xE5</tattr>
+        <tattr name="HUM_MEASUR_NO_HOLD" desc="Command code: Trigger Temperature Measurement. No Hold master." type="expr_hex" content="const" scope="task" min="0" max="65535">0xF5</tattr>
         <tattr name="POLYNOMIAL" type="expr_hex" content="const" scope="task" min="0" max="65535">0x131</tattr>
+        <tattr name="READ_REG" desc="Command code: Read User Register." type="expr_hex" content="const" scope="task" min="0" max="65535">0xE7</tattr>
         <tattr name="RdBufLen" type="expr" content="const" scope="task" min="0" max="65535">6</tattr>
-        <tattr name="TEMP_MEASUR_HOLD" desc="Trigger Temperature Measurement. Hold master" type="expr_hex" content="const" scope="task" min="0" max="65535">0xE3</tattr>
-        <tattr name="TEMP_MEASUR_NO_HOLD" desc="Trigger Temperature Measurement. No Hold master" type="expr_hex" content="const" scope="task" min="0" max="65535">0xF3</tattr>
+        <tattr name="SOFT_RESET" desc="Command code: Soft Reset." type="expr_hex" content="const" scope="task" min="0" max="65535">0xFE</tattr>
+        <tattr name="TEMP_MEASUR_HOLD" desc="Command code: Trigger Temperature Measurement. Hold master." type="expr_hex" content="const" scope="task" min="0" max="65535">0xE3</tattr>
+        <tattr name="TEMP_MEASUR_NO_HOLD" desc="Command code: Trigger Temperature Measurement. No Hold master. " type="expr_hex" content="const" scope="task" min="0" max="65535">0xF3</tattr>
         <tattr name="TwoByteArreyLen" type="expr" content="const" scope="task" min="0" max="65535">2</tattr>
+        <tattr name="WRITE_REG" desc="Command code: Write User Register." type="expr_hex" content="const" scope="task" min="0" max="65535">0xE6</tattr>
+        <tattr name="cfg.UserRegData" desc="Data for write in User Register" type="expr_hex" content="struct" scope="task" min="0" max="65535">0x0082</tattr>
+        <tattr name="input.ReadRequest" desc="Request to read the user's register." type="expr" content="struct" scope="task" min="0" max="1">1</tattr>
+        <tattr name="input.ResetRequest" desc="Soft Reset request." type="expr" content="struct" scope="task" min="0" max="1">1</tattr>
+        <tattr name="input.WriteRequest" desc="Request to write in the user's register." type="expr" content="struct" scope="task" min="0" max="1">1</tattr>
+        <tattr name="output.UserRegContent" desc="Content of the user register." type="expr_hex" content="struct" scope="task" min="0" max="65535">1</tattr>
         <tattr name="output.hum" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
         <tattr name="output.humCRC" type="expr_hex" content="struct" scope="task" min="0" max="65535">0</tattr>
         <tattr name="output.tmp" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
         <tattr name="output.tmpCRC" type="expr_hex" content="struct" scope="task" min="0" max="65535">0</tattr>
         <tattr name="state.TwoByte" size="TwoByteArreyLen" type="expr_hex" content="struct_array" scope="task" min="0" max="65535">0</tattr>
-        <tattr name="state.humOK" type="expr" content="struct" scope="task" min="0" max="65535">1</tattr>
-        <tattr name="state.tempOK" type="expr" content="struct" scope="task" min="0" max="65535">1</tattr>
+        <tattr name="state.humOK" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
+        <tattr name="state.tempOK" type="expr" content="struct" scope="task" min="0" max="65535">0</tattr>
         <resource_ref name="ADC" enabled="0"/>
         <resource_ref name="AON Domain Functionality" enabled="0"/>
         <resource_ref name="Accumulator-Based Math" enabled="0"/>
@@ -209,29 +217,15 @@ macro HTU21_CheckCrc(data0, data1, checksum,result) {
 
 }
 //=============================================================================================
-macro ReadParam(result, CRC, comand) {
+macro ReadTemp(result, CRC, comand) {
 
     // Configure and start the next measurement
     i2cStart();
     i2cTx(I2C_OP_WRITE | ALS_I2C_ADDR);
     i2cTx(comand);
-    //    i2cTx(TEMP_MEASUR_NO_HOLD);
-    //    i2cStop();
-
-    //fwDelayUs(10,FW_DELAY_RANGE_1_MS);
-    //i2cStop();
-    //i2cStart();
-    //    i2cRepeatedStart();
-    //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
-    //i2cStop();
-
-    // do {
-    //    fwDelayUs(10000,FW_DELAY_RANGE_100_MS);  // Wait 5 ms
-    //    i2cRepeatedStart();
-    //    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
-    // } while (state.i2cStatus != 0x0000);
-
+    //------
     fwDelayUs(50000,FW_DELAY_RANGE_100_MS);  // Wait 50 ms
+    //------
     i2cRepeatedStart();
     i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
 
@@ -247,21 +241,110 @@ macro ReadParam(result, CRC, comand) {
     //------
     U16 CRCok;
     HTU21_CheckCrc(DataRegM, DataRegL, CsReg, CRCok);
- //   HTU21_CSumIsOk(DataRegM, DataRegL, CsReg, CRCok);
     if(CRCok == 0) {
         result = (DataRegM << 8) | (DataRegL & 0xFC);
-         state.tempOK=0;
+        state.tempOK=1;
+
     } else {
-        result=0xFF00;
-         state.tempOK=1;
+        //result=0xFF00;
+        result=0;
+        state.tempOK=0;
     }
-    result = (DataRegM << 8) | (DataRegL & 0xFC);
+//    result = (DataRegM << 8) | (DataRegL & 0xFC);
     //result = (DataRegM << 8) | DataRegL;
     CRC = CsReg;
 }
 //=============================================================================================
-ReadParam(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
-ReadParam(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+macro ReadHum(result, CRC, comand) {
+
+    // Configure and start the next measurement
+    i2cStart();
+    i2cTx(I2C_OP_WRITE | ALS_I2C_ADDR);
+    i2cTx(comand);
+    //------
+    fwDelayUs(50000,FW_DELAY_RANGE_100_MS);  // Wait 50 ms
+    //------
+    i2cRepeatedStart();
+    i2cTx(I2C_OP_READ | ALS_I2C_ADDR);
+
+    U16 DataRegM;
+    U16 DataRegL;
+    U16 CsReg;
+
+    i2cRxAck(DataRegM);
+    i2cRxAck(DataRegL);
+    i2cRxNack(CsReg);
+
+    i2cStop();
+    //------
+    U16 CRCok;
+    HTU21_CheckCrc(DataRegM, DataRegL, CsReg, CRCok);
+    if(CRCok == 0) {
+        result = (DataRegM << 8) | (DataRegL & 0xFC);
+        state.humOK=1;
+
+    } else {
+        //result=0xFF00;
+        result=0;
+        state.humOK=0;
+    }
+//    result = (DataRegM << 8) | (DataRegL & 0xFC);
+    //result = (DataRegM << 8) | DataRegL;
+    CRC = CsReg;
+}
+//=============================================================================================
+macro ReadUserReg() {
+   i2cDeviceReadReg8(ALS_I2C_ADDR, READ_REG; output.UserRegContent);
+   input.ReadRequest=0;
+}
+//=============================================================================================
+macro WriteUserReg() {
+   i2cDeviceWriteReg8(ALS_I2C_ADDR, WRITE_REG, cfg.UserRegData);
+   input.WriteRequest=0;
+}
+//=============================================================================================
+macro SoftReset() {
+    //------
+    i2cStart();
+    i2cTx(I2C_OP_WRITE | ALS_I2C_ADDR);
+    i2cTx(SOFT_RESET);
+    //------
+    i2cStop();
+    //------
+    input.ResetRequest=0;
+}
+//=============================================================================================
+    if(input.ResetRequest==1) {
+            SoftReset();
+            ReadUserReg();
+    } else {
+            //-------
+            if(input.WriteRequest==1) {
+                WriteUserReg();
+                ReadUserReg();
+
+            } else {
+                if(input.ReadRequest==1) {
+                   ReadUserReg();
+                }
+                ReadTemp(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
+                ReadHum(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+            }
+
+
+
+             //ReadParam(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
+             //ReadParam(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+
+  //          ReadTemp(output.tmp, output.tmpCRC,TEMP_MEASUR_NO_HOLD );
+  //          ReadHum(output.hum, output.humCRC, HUM_MEASUR_NO_HOLD);
+
+
+         //   i2cDeviceWriteReg8(ALS_I2C_ADDR, WRITE_REG, cfg.UserRegData);
+        //    i2cDeviceReadReg8(ALS_I2C_ADDR, READ_REG; output.UserRegContent);
+            //-------
+     }
+
 //----------------------------------------------------------------------------------------------
 // Schedule the next execution
 fwScheduleTask(1);
@@ -274,7 +357,7 @@ fwScheduleTask(1);]]></sccode>
         <sccode name="terminate" init_power_mode="0"><![CDATA[]]></sccode>
         <event_trigger active_count="1">0,1,2,3</event_trigger>
         <tt_iter>run_execute,wait_1s</tt_iter>
-        <tt_struct>state.tempOK</tt_struct>
+        <tt_struct>state.i2cStatus</tt_struct>
         <rtl_struct></rtl_struct>
         <rtl_task_sel en="1" struct_log_list="output"/>
     </task>
