@@ -7,7 +7,7 @@
     <pattr name="Chip package">QFN48 7x7 RGZ</pattr>
     <pattr name="Chip revision">-</pattr>
     <pattr name="Clock in active mode">0</pattr>
-    <pattr name="Code prefix">hdu21d</pattr>
+    <pattr name="Code prefix">htu21d</pattr>
     <pattr name="Default power mode">0</pattr>
     <pattr name="Operating system">TI-RTOS</pattr>
     <pattr name="Output directory">D:/Projects/Sensor Controller Studio/HTU21D_sensor/scif_files</pattr>
